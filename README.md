@@ -82,6 +82,33 @@ Other Starmatrix/Riopool inverter pumps using the same Gizwits chipset may also 
 | `binary_sensor.rio750_fault_lp` | LP | Phase loss |
 | `binary_sensor.rio750_fault_cp` | CP | Communication loss between display and main board |
 
+## Important: LAN vs Cloud Limitations
+
+The Rio750 uses a **Gizwits** WiFi module. This integration uses the **local LAN protocol** — it does not require internet access or a cloud account. However, the pump firmware only implements a subset of controls over LAN:
+
+### What works over LAN (this integration)
+
+- **Pump on/off** (`switch.rio750_pump`)
+- **Manual speed** (`number.rio750_manual_speed`)
+- **All status reading** — speed, power, mode, gear, timers, faults
+
+### What does NOT work over LAN
+
+The following settings are managed by the **Gizwits cloud** (via the Starmatrix app) and **cannot be changed** through this integration:
+
+- Timer schedules (Time1–Time4 start/end/speed/enable)
+- Operating mode (Auto/Manual)
+- Manual gear presets (LOW/MEDI/HIGH/FULL)
+- Auto switch
+
+The Starmatrix app sends these settings through the cloud API, not directly to the pump. The entities for these values are exposed as **read-only sensors** so you can monitor them.
+
+### Required: Manual Mode
+
+The pump **must be set to Manual mode** via the Starmatrix app for speed control to work. If the pump is in Auto mode, it will ignore speed commands from this integration.
+
+> **Warning:** Do not attempt to switch the pump to Auto mode via LAN — the pump will stop accepting LAN control commands and can only be recovered using the Starmatrix app.
+
 ## Technical Details
 
 This integration communicates directly with the Gizwits WiFi module inside the pump over your local network. It does **not** use the Gizwits cloud API.
