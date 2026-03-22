@@ -28,11 +28,11 @@ Other Starmatrix/Riopool inverter pumps using the same Gizwits chipset may also 
 
 ### HACS (Recommended)
 
-1. Open HACS in Home Assistant
-2. Click the three dots in the top right and select **Custom repositories**
-3. Add `https://github.com/fred099/hass-riopool` with category **Integration**
-4. Search for "Riopool" and install
-5. Restart Home Assistant
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=fred099&repository=hass-riopool&category=integration)
+
+1. Click the button above, or manually: open HACS > three dots > **Custom repositories** > add `https://github.com/fred099/hass-riopool` with category **Integration**
+2. Search for "Riopool" and install
+3. Restart Home Assistant
 
 ### Manual
 
@@ -41,10 +41,11 @@ Other Starmatrix/Riopool inverter pumps using the same Gizwits chipset may also 
 
 ## Configuration
 
-1. Go to **Settings > Devices & Services > Add Integration**
-2. Search for **Riopool**
-3. Enter the IP address of your pump (auto-discovery will suggest it if found)
-4. The integration will verify the connection before completing setup
+[![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=riopool)
+
+1. Click the button above, or go to **Settings > Devices & Services > Add Integration** and search for **Riopool**
+2. Enter the IP address of your pump (auto-discovery will suggest it if found)
+3. The integration will verify the connection before completing setup
 
 > **Tip:** Assign a static IP / DHCP reservation to your pump for reliable operation.
 
