@@ -59,6 +59,7 @@ class GizwitsLanClient:
         self._reader: Optional[asyncio.StreamReader] = None
         self._writer: Optional[asyncio.StreamWriter] = None
         self._seq_counter = 0
+        self._lock = asyncio.Lock()
 
     @property
     def host(self) -> str:
@@ -116,23 +117,24 @@ class GizwitsLanClient:
 
     async def read_status(self) -> Optional[dict]:
         """Read device status and return parsed data points."""
-        try:
-            if not self._writer:
-                if not await self.connect():
-                    return None
+        async with self._lock:
+            try:
+                if not self._writer:
+                    if not await self.connect():
+                        return None
 
-            payload = await self._read_raw_status()
-            if payload is not None:
-                return self._parse_status(payload)
+                payload = await self._read_raw_status()
+                if payload is not None:
+                    return self._parse_status(payload)
 
-            LOGGER.error("Failed to get status response from %s", self._host)
-            await self.disconnect()
-            return None
+                LOGGER.error("Failed to get status response from %s", self._host)
+                await self.disconnect()
+                return None
 
-        except (asyncio.TimeoutError, ConnectionError, OSError) as e:
-            LOGGER.error("Error reading status from %s: %s", self._host, e)
-            await self.disconnect()
-            return None
+            except (asyncio.TimeoutError, ConnectionError, OSError) as e:
+                LOGGER.error("Error reading status from %s: %s", self._host, e)
+                await self.disconnect()
+                return None
 
     async def send_control(self, attrs: dict) -> bool:
         """Send control command to the device.
@@ -147,41 +149,42 @@ class GizwitsLanClient:
             {"ManualSwitch": True}
             {"ManualSetSpeed": 28}  (raw value, not RPM)
         """
-        try:
-            if not self._writer:
-                if not await self.connect():
+        async with self._lock:
+            try:
+                if not self._writer:
+                    if not await self.connect():
+                        return False
+
+                # Read current status to use as base for the control payload
+                current_raw = await self._read_raw_status()
+                if current_raw is None or len(current_raw) < 27:
+                    LOGGER.error("Cannot send control: failed to read current status")
                     return False
 
-            # Read current status to use as base for the control payload
-            current_raw = await self._read_raw_status()
-            if current_raw is None or len(current_raw) < 27:
-                LOGGER.error("Cannot send control: failed to read current status")
+                # Build attrFlags (4 bytes) indicating which datapoints changed
+                attr_flags = self._build_attr_flags(attrs)
+
+                # Build modified attrVals (27 bytes) from current state
+                attr_vals = self._build_control_payload(attrs, current_raw)
+                if attr_vals is None:
+                    return False
+
+                # Send control command (cmd 0x93)
+                # Format: [seq 4B] [p0 action=0x01] [attrFlags 4B] [attrVals 27B]
+                seq = self._next_seq()
+                await self._send_command(
+                    b"\x00\x93", seq + b"\x01" + attr_flags + attr_vals
+                )
+
+                # Read acknowledgement
+                response = await self._read_response()
+                LOGGER.debug("Control response: %s", response.hex() if response else "None")
+                return True
+
+            except (asyncio.TimeoutError, ConnectionError, OSError) as e:
+                LOGGER.error("Error sending control to %s: %s", self._host, e)
+                await self.disconnect()
                 return False
-
-            # Build attrFlags (4 bytes) indicating which datapoints changed
-            attr_flags = self._build_attr_flags(attrs)
-
-            # Build modified attrVals (27 bytes) from current state
-            attr_vals = self._build_control_payload(attrs, current_raw)
-            if attr_vals is None:
-                return False
-
-            # Send control command (cmd 0x93)
-            # Format: [seq 4B] [p0 action=0x01] [attrFlags 4B] [attrVals 27B]
-            seq = self._next_seq()
-            await self._send_command(
-                b"\x00\x93", seq + b"\x01" + attr_flags + attr_vals
-            )
-
-            # Read acknowledgement
-            response = await self._read_response()
-            LOGGER.debug("Control response: %s", response.hex() if response else "None")
-            return True
-
-        except (asyncio.TimeoutError, ConnectionError, OSError) as e:
-            LOGGER.error("Error sending control to %s: %s", self._host, e)
-            await self.disconnect()
-            return False
 
     async def _read_raw_status(self) -> Optional[bytes]:
         """Read raw status payload (34 bytes) from device."""
