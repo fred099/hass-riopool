@@ -1,0 +1,18 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Riopool Rio750 Pool Pump",
+        "description": "Enter the IP address of your Riopool Rio750 pool pump.",
+        "data": {
+          "host": "IP Address"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to the pump. Check the IP address and make sure the pump is powered on.",
+      "cannot_read": "Connected but failed to read pump status.",
+      "unknown": "An unexpected error occurred."
+    }
+  }
+}
