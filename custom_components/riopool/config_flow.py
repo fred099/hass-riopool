@@ -23,21 +23,15 @@ class RiopoolConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             # Test connection
             client = GizwitsLanClient(host)
             try:
-                connected = await client.connect()
-                if connected:
-                    status = await client.read_status()
-                    await client.disconnect()
+                status = await client.read_status()
+                if status:
+                    await self.async_set_unique_id(f"riopool_{host}")
+                    self._abort_if_unique_id_configured()
 
-                    if status:
-                        await self.async_set_unique_id(f"riopool_{host}")
-                        self._abort_if_unique_id_configured()
-
-                        return self.async_create_entry(
-                            title=f"Riopool Rio750 ({host})",
-                            data={CONF_HOST: host},
-                        )
-                    else:
-                        errors["base"] = "cannot_read"
+                    return self.async_create_entry(
+                        title=f"Riopool Rio750 ({host})",
+                        data={CONF_HOST: host},
+                    )
                 else:
                     errors["base"] = "cannot_connect"
             except Exception:
